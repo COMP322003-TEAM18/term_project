@@ -33,6 +33,28 @@ ON b.B_id = topbrand.B_id
 WHERE b.S_id = s.S_id
 ORDER BY Count_sold DESC;
 
+-- Q5
+-- DESC 정렬 후 LIMIT 1
+SELECT *
+FROM ITEM i
+INNER JOIN (
+    SELECT ol.I_code, COUNT(ol.I_code) AS Count_selled
+    FROM ORDER_LIST ol
+    WHERE ol.So_id IN (
+        SELECT so.So_id
+        FROM SHIPPINGORDER so
+        WHERE so.C_id IN (
+            SELECT C_id
+            FROM SHIPPINGORDER 
+            GROUP BY C_id
+            HAVING COUNT(*) >= 7
+            )
+        )
+    GROUP BY ol.I_code
+    ORDER BY Count_selled DESC LIMIT 1
+) AS ic
+ON i.Code = ic.I_Code;
+
 -- Q6
 -- Top 5 매출을 낸 사람을 찾는 경우:
 SELECT c.C_id, c.Fname, c.Lname, SUM(i.Price * ol.Quantity) AS sum_amount
@@ -82,6 +104,120 @@ GROUP BY i.Code
 ORDER BY sum_amount DESC
 LIMIT 5;
 
+-- Q7
+-- 소매업을 하는 고객을 대상으로 가장 높은 매출을 낸 제품의 브랜드는 무엇이며,
+SELECT *
+FROM BRAND b
+INNER JOIN (
+    SELECT tp.B_id, SUM(tp.TotalPrice) AS Sale
+    FROM (
+        SELECT i.B_id, (ol.Quantity*i.Price) AS TotalPrice
+        FROM ORDER_LIST ol, ITEM i
+        WHERE ol.So_id IN (
+            SELECT so.So_id
+            FROM SHIPPINGORDER so
+            WHERE so.C_id IN (
+                SELECT c.C_id
+                FROM CUSTOMER c
+                WHERE c.Type="소매업"
+                )
+        )
+        AND ol.I_code=i.Code
+    ) AS tp
+    GROUP BY tp.B_id
+    ORDER BY Sale DESC LIMIT 1
+) AS MSB
+ON b.B_id = MSB.B_id;
+
+-- 그를 공급하는 업체가 취급하는 다른 브랜드에 대해 각각 브랜드 별 소매업대상 가장 높은 매출을 낸 제품은 무엇인가?
+SELECT DISTINCT result.B_id, result.Sale, bsale2.Code
+FROM (
+SELECT bsale.B_id, MAX(bsale.TotalPrice) AS Sale
+FROM (
+    SELECT i.B_id, i.Code, (ol.Quantity*i.Price) AS TotalPrice
+    FROM ORDER_LIST ol, ITEM i
+    WHERE ol.So_id IN (
+        SELECT so.So_id
+        FROM SHIPPINGORDER so
+        WHERE so.C_id IN (
+            SELECT c.C_id
+            FROM CUSTOMER c
+            WHERE c.Type="소매업"
+            )
+    )
+    AND ol.I_code=i.Code
+) AS bsale
+WHERE bsale.B_id IN (
+    SELECT b2.B_id
+    FROM BRAND b2
+    WHERE b2.S_id IN (
+        SELECT b.S_id
+        FROM BRAND b
+        INNER JOIN (
+    	SELECT tp.B_id, SUM(tp.TotalPrice) AS Sale
+    	FROM (
+    	    SELECT i.B_id, (ol.Quantity*i.Price) AS TotalPrice
+    	    FROM ORDER_LIST ol, ITEM i
+    	    WHERE ol.So_id IN (
+    	        SELECT so.So_id
+    	        FROM SHIPPINGORDER so
+    	        WHERE so.C_id IN (
+    	            SELECT c.C_id
+    	            FROM CUSTOMER c
+    	            WHERE c.Type="소매업"
+    	            )
+    	    )
+    	    AND ol.I_code=i.Code
+    	) AS tp
+    	GROUP BY tp.B_id
+    	ORDER BY Sale DESC LIMIT 1
+        ) AS MSB
+        ON b.B_id = MSB.B_id
+    ) 
+    AND b2.B_id NOT IN (
+        SELECT b.B_id
+        FROM BRAND b
+        INNER JOIN (
+    	SELECT tp.B_id, SUM(tp.TotalPrice) AS Sale
+    	FROM (
+    	    SELECT i.B_id, (ol.Quantity*i.Price) AS TotalPrice
+    	    FROM ORDER_LIST ol, ITEM i
+    	    WHERE ol.So_id IN (
+    	        SELECT so.So_id
+    	        FROM SHIPPINGORDER so
+    	        WHERE so.C_id IN (
+    	            SELECT c.C_id
+    	            FROM CUSTOMER c
+    	            WHERE c.Type="소매업"
+    	            )
+    	    )
+    	    AND ol.I_code=i.Code
+    	) AS tp
+    	GROUP BY tp.B_id
+    	ORDER BY Sale DESC LIMIT 1
+        ) AS MSB
+        ON b.B_id = MSB.B_id
+    )
+)
+GROUP BY bsale.B_id
+) AS result
+INNER JOIN (
+    SELECT i.B_id, i.Code, (ol.Quantity*i.Price) AS Sale
+    FROM ORDER_LIST ol, ITEM i
+    WHERE ol.So_id IN (
+        SELECT so.So_id
+        FROM SHIPPINGORDER so
+        WHERE so.C_id IN (
+            SELECT c.C_id
+            FROM CUSTOMER c
+            WHERE c.Type="소매업"
+            )
+    )
+    AND ol.I_code=i.Code
+) AS bsale2
+ON result.Sale = bsale2.Sale
+AND result.B_id = bsale2.B_id;
+
 -- Q8
 -- 그 중분류와, 그 중분류의 제품을 주문한 CUSTOMER들의 타입중 가장 많은 것
 SELECT m_c.Mc_id, m_c.Name, c.Type, COUNT(c.Type) AS type_cnt
@@ -116,6 +252,20 @@ AND c.C_id = so.C_id
 GROUP BY m_c.Mc_id, c.Type
 ORDER BY type_cnt DESC
 LIMIT 1;
+
+-- Q9
+SELECT i.Code, i.Name
+FROM ITEM i, (
+     SELECT sblist.I_code, SUM(sblist.Quantity) AS sumQuantity
+     FROM (
+         SELECT  sb.I_code, sb.Quantity
+         FROM SHOPPINGBAG sb, ITEM i
+         WHERE i.Code=sb.I_code
+     ) AS sblist
+     GROUP BY sblist.I_code
+ ) AS sbl
+ WHERE i.Code = sbl.I_code
+ AND i.Stock < sbl.sumQuantity;
 
 -- Q10
 -- 그걸 장바구니에 담고 있는 고객
