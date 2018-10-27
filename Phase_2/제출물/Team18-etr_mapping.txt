@@ -1,0 +1,58 @@
+<<Relation별 매핑 설명>>
+
+1. ITEM 
+- Code, Name, Spec, Quantity, Unit, Stock, Price, Min_quantity: ITEM relation의 attribute로 포함됨(PK: Code)
+- Sc_id: S_CATEGORY와 N:1 관계로, Sc_id(PK)를 FK로 가져옴 
+- B_id: BRAND와 N:1 관계로, B_id(PK)를 FK로 가져옴
+
+2. SUPPLIER
+- S_id, Name: SUPPLIER relation의 attribute로 포함됨(PK: S_id)
+
+3. BRAND
+- B_id, Name: BRAND relation의 attribute로 포함됨(PK: B_id)
+- S_id: SUPPLIER와 N:1 관계로, S_id(PK)를 FK로 가져옴 
+
+4. L_CATEGORY
+- Lc_id, Name: L_CATEGORY relation의 attribute로 포함됨(PK: Lc_id)
+
+5. M_CATEGORY
+- Mc_id, Name: M_CATEGORY relation의 attribute로 포함됨(PK: Mc_id)
+- Lc_id: L_CATEGORY와 N:1 관계로, Lc_id(PK)를 FK로 가져옴 
+
+6. S_CATEGORY
+- Sc_id, Name: S_CATEGORY relation의 attribute로 포함됨(PK: Sc_id)
+- Mc_id: M_CATEGORY와 N:1 관계로, Mc_id(PK)를 FK로 가져옴
+
+7. CUSTOMER
+- C_id, Username, Password, Address, Tel, Sex, Bdate, Fname, Lname, Job, Type: CUSTOMER relation의 attribute로 포함됨(PK: C_id)
+
+8. SHIPPINGCOMPANY
+- Sh_id, Name, Tel, Region: SHIPPINGCOMPANY relation의 attribute로 포함됨(PK: Sh_id)
+
+9. SHIPPINGORDER
+- So_id, Address, Rname, Rtel, Otime: SHIPPINGORDER relation의 attribute로 포함됨(PK: So_id)
+- C_id: CUSTOMER와 N:1 관계로, C_id(PK)를 FK로 가져옴
+- Sh_id: SHIPPINGCOMPANY와 N:1 관계로, Sh_id(PK)를 FK로 가져옴
+
+10. SHOPPINGBAG
+- C_id, I_code: owner인 CUSTOMER의 C_id(PK)와 I_code(partial key)의 묶음을 PK로 가짐
+- Quantity: SHOPPINGBAG relation의 attribute로 포함됨
+
+11. ORDER_LIST
+- So_id, I_code: SHIPPINGORDER와 ITEM의 관계가 N:M 관계이기 때문에, 두 relation의 PK인 So_id와 I_code의 묶음을 PK로 가짐
+- Quantity: ORDER_LIST relation의 attribute로 포함됨
+
+
+<<ER Schema 수정사항>>
+
+1. CUSTOMER: ‘Age’ attribute 
+            ⇒ ‘Bdate’ 로 변경
+
+2. CUSTOMER: Composite attribute ‘Name’(‘Firstname’, ‘Lastname’)
+		    ⇒ ‘Fname’, ‘Lname’ 로 분리 및 이름 변경
+
+3. SHIPPINGORDER: ‘Time’ attribute 
+		    ⇒ ‘Otime’ (Type : DATETIME)
+
+4. SHIPPINGORDER: Composite attribute ‘Receiver’(‘Name’, ‘Tel’)
+		    ⇒ ‘Rname’, ‘Rtel’ 로 분리
