@@ -23,27 +23,28 @@ def read_item():
 def generate_list(item_list, type):
     result_list = []
 
-    # 기타인 경우: 1~5종류 사이로 단위*1~3개
-    if type == '기타':
-        items = random.sample(range(0, len(item_list)), random.randint(1, 6))
-        items.sort()
-        for it in items:
-            temp_tuple = (item_list[it], item_list[it].quantity * random.randint(1, 4))
-            result_list.append(temp_tuple)
     # 도, 소매인 경우: 2~10종류 사이로 단위*20~30개
-    elif type == '도매업' or type == '소매업':
+    if type == '도매업' or type == '소매업':
         items = random.sample(range(0, len(item_list)), random.randint(2, 11))
         items.sort()
         for it in items:
             temp_tuple = (item_list[it], item_list[it].quantity * random.randint(20, 31))
             result_list.append(temp_tuple)
+    # 기타인 경우: 1~5종류 사이로 단위*1~3개
+    else:
+        items = random.sample(range(0, len(item_list)), random.randint(1, 6))
+        items.sort()
+        for it in items:
+            temp_tuple = (item_list[it], item_list[it].quantity * random.randint(1, 4))
+            result_list.append(temp_tuple)
 
-    print(len(result_list), 'items included in order_list.')
+    # print(len(result_list), 'items included in order_list.')
 
     return result_list
 
-item_list = read_item()
-order_list = generate_list(item_list, '소매업')
-
-for litem in order_list:
-    print(litem[0], litem[1], sep=', ')
+if __name__ == '__main__':
+    item_list = read_item()
+    order_list = generate_list(item_list, '소매업')
+    
+    for litem in order_list:
+        print(litem[0], litem[1], sep=', ')
