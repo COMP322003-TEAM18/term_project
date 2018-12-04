@@ -5,7 +5,7 @@ import java.util.Scanner;
 import java.util.logging.Logger;
 
 public class Main {
-	public static final String URL = "jdbc:mysql://localhost:3306/shopx?serverTimezone=Asia/Seoul";
+	public static final String URL = "jdbc:mysql://localhost:3306/shopx?serverTimezone=Asia/Seoul&useUnicode=true&characterEncoding=utf8";
 	public static final String USER_ID = "admin";
 	public static final String USER_PASSWD = "admin";
 
@@ -65,6 +65,9 @@ public class Main {
 		System.out.println("비밀번호를 입력해 주세요.");
 		System.out.print("> ");
 		String password = sc.nextLine().trim();
+		// TODO 비밀번호 입력 암호화.
+		/*Console cons = System.console();
+		String password = new String(cons.readPassword());*/
 
 		try {
 			sql = "SELECT C_id, Password FROM CUSTOMER WHERE Username = '" + username + "'";
@@ -127,6 +130,7 @@ public class Main {
 			} else if (input.equals("4")) {
 
 			} else if (input.equals("0")) {
+				currentUser = null;	// 로그아웃 시 
 				System.out.println("성공적으로 로그아웃하였습니다.");
 				break;
 			} else {
@@ -160,7 +164,7 @@ public class Main {
 			String input = sc.nextLine().trim();
 
 			if (input.equals("1")) {
-
+				//accountSetting();
 			} else if (input.equals("2")) {
 
 			} else if (input.equals("3")) {
@@ -168,11 +172,16 @@ public class Main {
 			} else if (input.equals("4")) {
 
 			} else if (input.equals("0")) {
+				currentUser = null;
 				System.out.println("성공적으로 로그아웃하였습니다.");
 				break;
 			} else {
 				System.out.println("잘못된 입력입니다.");
 				continue;
+			}
+			// currentUser == null -> 로그아웃이 강제되는 상황일 경우
+			if (currentUser == null) {
+				break;
 			}
 			
 			System.out.println();
@@ -188,7 +197,7 @@ public class Main {
 
 	public static void main(String[] args) {
 		LOG = Logger.getGlobal();
-		
+
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver");
 			LOG.info("JDBC Driver founded.");
@@ -207,7 +216,7 @@ public class Main {
 		}
 
 		rootScreen();
-		
+
 		try {
 			stmt.close();
 			conn.close();
