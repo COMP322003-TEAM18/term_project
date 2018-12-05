@@ -60,7 +60,9 @@ public class Main {
 			if (input.equals("1")) {
 				loginScreen();
 			} else if (input.equals("2")) {
+				menu.enter("회원가입");
 				signupScreen();
+				menu.leave();
 			} else if (input.equals("0")) {
 				System.out.println("어플리케이션을 종료합니다.");
 				sc.close();
@@ -138,7 +140,7 @@ public class Main {
 		// PASSWORD는 재확인 과정 거칠 것
 		String id, password, repassword, address, tel, sex, bdate, fname, lname, job, type;
 		System.out.println();
-		System.out.println("회원가입");
+		System.out.println(menu.path());
 		System.out.println(hr);
 		// 필수 정보 입력
 		System.out.println("사용자 계정에 필요한 필수 정보를 입력합니다. 회원가입 중단은 아이디, 비밀번호 입력 시에만 가능합니다.");
