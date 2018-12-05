@@ -60,7 +60,9 @@ public class Main {
 			if (input.equals("1")) {
 				loginScreen();
 			} else if (input.equals("2")) {
+				menu.enter("회원가입");
 				signupScreen();
+				menu.leave();
 			} else if (input.equals("0")) {
 				System.out.println("어플리케이션을 종료합니다.");
 				sc.close();
@@ -133,7 +135,331 @@ public class Main {
 	}
 
 	public static void signupScreen() {
+		// 필수 : ID, PASSWORD, ADDRESS, TEL
+		// 선택 : 성별, 생년월일, 성(Lname), 이름, 직업, 타입(도/소매)
+		// PASSWORD는 재확인 과정 거칠 것
+		String id, password, repassword, address, tel, sex, bdate, fname, lname, job, type;
+		System.out.println();
+		System.out.println(menu.path());
+		System.out.println(hr);
+		// 필수 정보 입력
+		System.out.println("사용자 계정에 필요한 필수 정보를 입력합니다. 회원가입 중단은 아이디, 비밀번호 입력 시에만 가능합니다.");
+		// ID 입력
+		System.out.println("아이디를 입력해 주세요. 아이디는 영문+숫자로 이루어지며 20자 이내여야 합니다.");
+		System.out.println("회원가입을 중단하고 싶으면 공백을 입력해 주세요.");
+		while (true) {
+			System.out.print("> ");
+			id = sc.nextLine().trim();
+			boolean id_check = true;
+			String fail_reason = "";
+			String pattern = "^[a-zA-Z0-9]*$";
+			// 공백 입력 시
+			if(id.length() <= 0 ) {
+				System.out.println("공백을 입력하였습니다. 회원가입을 중단합니다.");
+				return;
+			}
+			// validation check: 길이(20자 이내)
+			if (id.length() > 20) {
+				id_check = false;
+				fail_reason += "\t아이디는 20자 이내여야 합니다.\n";
+			}
+			// validation check: 정규식(영문+숫자)
+			if (!id.matches(pattern)) { // 정규식 불일치
+				id_check = false;
+				fail_reason += "\t아이디는 영문+숫자로만 구성되어야 합니다.\n";
+			}
+			// validation check: 아이디 존재 여부
+			try {
+				sql = "SELECT C_id FROM CUSTOMER WHERE Username = '" + id + "'";
+				ResultSet rs = stmt.executeQuery(sql);
+				rs.last(); // 커서를 맨 뒤로 옮김
+				if (rs.getRow() > 0) { // 이미 아이디가 존재할 경우
+					id_check = false;
+					fail_reason += "\t이미 존재하는 아이디입니다.\n";
+				}
+				rs.close();
+				conn.commit();
+			} catch (SQLException ex) {
+				System.err.println("sql error = " + ex.getMessage());
+				id_check = false;
+				fail_reason += "\t아이디를 검색하는데 오류가 발생했습니다. 잘못된 아이디 형식\n";
+			}
 
+			if (id_check) { // 생성가능한 id일 경우
+				System.out.println("[ " + id + " ]는 사용 가능한 아이디입니다.");
+				break;
+			} else { // 생성이 불가능할 경우
+				System.out.println("생성할 수 없는 아이디입니다. 다시 입력해 주세요.");
+				System.out.printf("\t사유: " + "\n" + fail_reason);
+			}
+		}
+		// PASSWORD 입력
+		while (true) {
+			System.out.println("비밀번호를 입력해 주세요. 비밀번호는 영문+숫자+특수문자로 이루어지며 30자 이내여야 합니다.");
+			System.out.println("회원가입을 중단하고 싶으면 공백을 입력해 주세요");
+			System.out.print("> ");
+			password = sc.nextLine().trim();
+			System.out.println("비밀번호 확인을 위해 다시 입력해 주세요.");
+			System.out.print("> ");
+			repassword = sc.nextLine().trim();
+			// 공백 입력 시
+			if(password.length() <= 0 ) {
+				System.out.println("공백을 입력하였습니다. 회원가입을 중단합니다.");
+				return;
+			}			
+			if (repassword.equals(password)) { // 비밀번호가 일치하는 경우
+				boolean pass_check = true;
+				String fail_reason = "";
+				String pattern = "^[a-zA-Z0-9\\{\\}\\[\\]\\/?.,;:|\\)*~`!^\\-_+<>@\\#$%&\\\\\\=\\(\\'\\\"]*$";
+				// validation check: 길이(30자 이내)
+				if (password.length() <= 0 || password.length() > 30) {
+					pass_check = false;
+					fail_reason += "\t비밀번호는 30자 이내여야 합니다.\n";
+				}
+				// validation check: 정규식(영문+숫자+특수문자)
+				if (!password.matches(pattern)) { // 정규식 불일치
+					pass_check = false;
+					fail_reason += "\t비밀번호는 영문+숫자+특수문자(공백제외)로만 구성되어야 합니다.\n";
+				}
+
+				if (pass_check) { // 생성가능한 PASSWORD일 경우
+					System.out.println("사용 가능한 비밀번호입니다.");
+					break;
+				} else { // 생성이 불가능할 경우
+					System.out.println("생성할 수 없는 비밀번호입니다. 다시 입력해 주세요.");
+					System.out.printf("\t사유: \n" + fail_reason);
+				}
+			} else { // 비밀번호가 일치하지 않는 경우
+				System.out.println("비밀번호가 일치하지 않습니다. 다시 시도해 주세요");
+			}
+		}
+		// ADDRESS 입력
+		System.out.println("주소를 입력해 주세요. ");
+		while (true) {
+			System.out.print("> ");
+			address = sc.nextLine().trim();
+			address = address.replaceAll("\\\'", "\\\\\'"); // TODO**
+			if (address.length() > 200) { // 주소 길이 제한 200자를 초과하는 경우 - 200자까지만 입력
+				System.out.println("주소 길이 제한을 초과하여 200자까지만 저장합니다.");
+				address = String.format("%200s", address);
+				System.out.println("\t" + address);
+				break;
+			} else if (address.length() <= 0) {	// 공백을 입력했을 경우
+				System.out.println("주소 정보는 반드시 기입해야 합니다. 다시 입력해 주세요.");
+			} else {	// 주소 정보가 입력됬을 경우
+				break;
+			}
+		}		
+		// TEL 입력
+		System.out.println("전화번호를 입력해 주세요. (ex:010-1234-5678 | 0531234567)");
+		while (true) {
+			System.out.print("> ");
+			tel = sc.nextLine().trim();
+			boolean tel_check = true;
+			String fail_reason = "";
+			String pattern = "^\\d{2,3}-\\d{3,4}-\\d{4}|\\d{2,3}\\d{3,4}\\d{4}$";
+			// validation check: 정규식(전화번호)
+			if (!tel.matches(pattern)) { // 정규식 불일치
+				tel_check = false;
+				fail_reason += "\t올바른 전화번호 형식이 아닙니다.\n";
+			} else {
+				tel = tel.replaceAll("-", "");
+			}
+
+			if (tel_check) { // 생성가능한 전화번호일 경우
+				break;
+			} else { // 생성이 불가능할 경우
+				System.out.println("생성할 수 없는 전화번호 형식입니다. 다시 입력해 주세요.");
+				System.out.printf("\t사유: \n" + fail_reason);
+			}
+		}
+		// 추가 정보 입력
+		// SEX 입력
+		System.out.println("사용자 계정의 추가 정보를 입력합니다. 다음 항목들은 필수가 아닙니다.");
+		System.out.println("입력을 원치 않을 시 공백으로 두고 개행하세요.");
+		System.out.println("성별을 입력해 주세요. (m/f/M/F)");
+		while (true) {
+			System.out.print("> ");
+			sex = sc.nextLine().trim();
+			if (sex.length() <= 0) {
+				sex = null;
+				break;
+			}
+			boolean sex_check = true;
+			String fail_reason = "";
+			String pattern = "^[mMfF]$";
+			// validation check: 정규식(전화번호)
+			if (!sex.matches(pattern)) { // 정규식 불일치
+				sex_check = false;
+				fail_reason += "\t올바른 성별 형식이 아닙니다. (m/f/M/F)\n";
+			}
+
+			if (sex_check) { // 생성가능한 전화번호일 경우
+				sex = sex.toUpperCase();
+				break;
+			} else { // 생성이 불가능할 경우
+				System.out.println("생성할 수 없는 성별 형식입니다. 다시 입력해 주세요.");
+				System.out.printf("\t사유: \n" + fail_reason);
+			}
+		}
+		// 생년월일 입력
+		System.out.println("생년월일을 입력해 주세요. (YYYY-MM-DD)");
+		while (true) {
+			System.out.print("> ");
+			bdate = sc.nextLine().trim();
+			if (bdate.length() <= 0) {
+				bdate = null;
+				break;
+			}
+			boolean bdate_check = true;
+			String fail_reason = "";
+			String pattern = "^(19|20|21)\\d{2}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[0-1])$";
+			// validation check: 정규식(전화번호)
+			if (!bdate.matches(pattern)) { // 정규식 불일치
+				bdate_check = false;
+				fail_reason += "\t올바른 생년월일 형식이 아닙니다. (YYYY-MM-DD)\n";
+			}
+
+			if (bdate_check) { // 생성가능한 생년월일일 경우
+				break;
+			} else { // 생성이 불가능할 경우
+				System.out.println("생성할 수 없는 생년월일 형식입니다. 다시 입력해 주세요.");
+				System.out.printf("\t사유: \n" + fail_reason);
+			}
+		}
+		// 이름 입력
+		System.out.println("이름을 입력해 주세요.");
+		System.out.print("> ");
+		fname = sc.nextLine().trim();
+		fname = fname.replaceAll("\\\'", "\\\\\'"); // TODO**
+		if (fname.length() > 30) { // 이름 길이 제한 30자를 초과하는 경우 - 30자까지만 입력
+			System.out.println("이름 길이 제한을 초과하여 30자까지만 저장합니다.");
+			fname = String.format("%30s", fname);
+			System.out.println("\t" + fname);
+		} else if (fname.length() <= 0) {
+			fname = null;
+		}
+		// 성 입력
+		System.out.println("성을 입력해 주세요");
+		System.out.print("> ");
+		lname = sc.nextLine().trim();
+		lname = lname.replaceAll("\\\'", "\\\\\'"); // TODO**
+		if (lname.length() > 30) { // 성씨 길이 제한 30자를 초과하는 경우 - 30자까지만 입력
+			System.out.println("성씨 길이 제한을 초과하여 30자까지만 저장합니다.");
+			lname = String.format("%30s", lname);
+			System.out.println("\t" + lname);
+		} else if (lname.length() <= 0) {
+			lname = null;
+		}
+		// 직업 입력
+		System.out.println("직업을 입력해 주세요");
+		System.out.print("> ");
+		job = sc.nextLine().trim();
+		job = job.replaceAll("\\\'", "\\\\\'"); // TODO**
+		if (job.length() > 40) { // 직업 길이 제한 40자를 초과하는 경우 - 40자까지만 입력
+			System.out.println("직업 길이 제한을 초과하여 40자까지만 저장합니다.");
+			job = String.format("%40s", job);
+			System.out.println("\t" + job);
+		} else if (job.length() <= 0) {
+			job = null;
+		}
+		// 타입 입력
+		System.out.println("타입을 입력해 주세요 (소매/도매/기타)");
+		while (true) {
+			System.out.print("> ");
+			type = sc.nextLine().trim();
+			if (type.length() <= 0) {
+				type = null;
+				break;
+			}
+			boolean type_check = true;
+			String fail_reason = "";
+			String pattern = "^(소매)|(도매)|(기타)$";
+			// validation check: 정규식(소매|도매|기타)
+			if (!type.matches(pattern)) { // 정규식 불일치
+				type_check = false;
+				fail_reason += "\t올바른 타입 형식이 아닙니다. (소매/도매/기타)\n";
+			}
+
+			if (type_check) { // 생성가능한 타입일 경우
+				break;
+			} else { // 생성이 불가능할 경우
+				System.out.println("생성할 수 없는 타입 형식입니다. 다시 입력해 주세요.");
+				System.out.printf("\t사유: \n" + fail_reason);
+			}
+		}
+		// 필수 : ID, PASSWORD, ADDRESS, TEL
+		// 선택 : 성별, 생년월일, 성(Lname), 이름, 직업, 타입(도/소매)
+		String temp_pass = "";
+		for (int i = 0; i < password.length(); i++) {
+			temp_pass += "*";
+		}
+		System.out.println("필수입력) ID: " + id + ", ADDRESS: " + address + ", TEL: " + tel);
+		System.out.println("추가정보) 성별: " + sex + ", 생년월일: " + bdate + ", 성: " + lname + ", 이름: " + fname + ", 직업: " + job
+				+ ", 타입: " + type);
+
+		// INSERT CUSTOMER Query
+		// Phase 03부터 새로 추가되는 고객은 C_id가 'C3'로 시작
+		// SELECT 문으로 C_id가 'C3'로 시작하는 고객을 정렬하여 검색한다.
+		// 검색 후 가장 마지막 숫자 다음 수를 C_id로 부여
+		try {
+			String c_id = "";
+			// Insert 1) : SELECT C_id LIKE 'C3%'
+			sql = "SELECT C_id FROM CUSTOMER WHERE C_id LIKE 'C3%' ORDER BY C_id DESC LIMIT 1";
+			ResultSet rs = stmt.executeQuery(sql);
+			rs.last(); // 커서를 맨 뒤로 옮김
+			if (rs.getRow() == 0) { // C_id가 C3로 시작하는 고객이 존재하지 않음
+				c_id = "C300000001";
+			} else {
+				rs.beforeFirst(); // 커서를 맨 앞으로 옮김
+				if (rs.next()) {
+					String SELECT_c_id = rs.getString(1);
+					c_id = String.format("C3%08d", Integer.parseInt(SELECT_c_id.substring(2)) + 1);
+				}
+				rs.close();
+				conn.commit();
+			}			
+			String insert_sql = "INSERT INTO CUSTOMER VALUES ('" + c_id + "', '" + id + "', '" + password + "', '"
+					+ address + "', '" + tel + "', ";
+			if (sex == null) {
+				insert_sql += "NULL, ";
+			} else {
+				insert_sql += String.format("'%s', ", sex);
+			}
+			if (bdate == null) {
+				insert_sql += "NULL, ";
+			} else {
+				// STR_TO_DATE('1972-05-10', '%Y-%m-%d')
+				insert_sql += String.format("STR_TO_DATE('%s', '%%Y-%%m-%%d'), ", bdate);
+			}
+			if (fname == null) {
+				insert_sql += "NULL, ";
+			} else {
+				insert_sql += String.format("'%s', ", fname);
+			}
+			if (lname == null) {
+				insert_sql += "NULL, ";
+			} else {
+				insert_sql += String.format("'%s', ", lname);
+			}
+			if (job == null) {
+				insert_sql += "NULL, ";
+			} else {
+				insert_sql += String.format("'%s', ", job);
+			}
+			if (type == null) {
+				insert_sql += "NULL)";
+			} else {
+				insert_sql += String.format("'%s')", type);
+			}
+			
+			int res = stmt.executeUpdate(insert_sql);
+			System.out.println("계정이 생성되었습니다.");
+			conn.commit();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.out.println("계정을 생성할 수 없습니다.");
+		}
 	}
 
 	public static ResultSet showBag() {
