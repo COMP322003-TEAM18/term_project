@@ -980,7 +980,8 @@ public class Main {
 			String input = sc.nextLine().trim();
 
 			if (input.equals("1")) {
-
+				menu.enter("물품 주문");
+				searchItem();
 			} else if (input.equals("2")) {
 
 			} else if (input.equals("3")) {
@@ -1877,7 +1878,7 @@ public class Main {
 			System.out.println("상세히 보고 싶은 상품의 연번을 입력해주세요. 미입력 시 이전 메뉴로 돌아갑니다.");
 			System.out.print("> ");
 			input = sc.nextLine().trim();
-			if( input.length() <= 0) {
+			if (input.length() <= 0) {
 				System.out.println("이전 메뉴로 돌아갑니다.");
 				break;
 			}
@@ -1919,13 +1920,13 @@ public class Main {
 					System.out.println("검색 중 문제가 발생했습니다. 나중에 다시 시도해 주세요");
 					menu.leave();
 					return;
-				}				
+				}
 			} else { // 선택이 불가능한 경우
 				System.out.println("잘못된 입력입니다. 다시 입력해 주세요.");
 				System.out.printf("\t사유: \n" + fail_reason);
 			}
 		}
-	
+
 		menu.leave();
 	}
 
@@ -1986,7 +1987,12 @@ public class Main {
 
 						String code = rs.getString(1);
 						menu.enter("상품 상세정보");
-						showItemInfo(code);
+
+						if (currentUser.getC_id().charAt(0) == 'A') { // 관리자 계정
+							showItemInfoAdmin(code);
+						} else { // 일반 사용자
+							showItemInfo(code);
+						}
 
 						showItemList(rs);
 						System.out.println();
@@ -1998,6 +2004,93 @@ public class Main {
 			rs.close();
 			conn.commit();
 			menu.leave();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+	}
+
+	private static void showItemInfoAdmin(String code) {
+		Statement stmt2 = null;
+
+		try {
+			stmt2 = conn.createStatement();
+			sql = "SELECT * FROM ITEM WHERE Code = '" + code + "'";
+			ResultSet itrs = stmt2.executeQuery(sql);
+
+			itrs.next();
+			String name = itrs.getString(2);
+			String spec = itrs.getString(3);
+			int quantity = itrs.getInt(4);
+			String unit = itrs.getString(5);
+			int stock = itrs.getInt(6);
+			int price = itrs.getInt(7);
+			int min_quantity = itrs.getInt(8);
+
+			System.out.println();
+			System.out.println(menu.path());
+			System.out.println(hr);
+			System.out.println("상품 코드: " + code);
+			System.out.println("품명: " + name);
+			System.out.println("규격: " + spec);
+			System.out.println("판매 단위: " + quantity + unit);
+			System.out.println("단가: " + price);
+			System.out.println("최소 주문 수량: " + min_quantity);
+			System.out.println("재고 수량: " + stock);
+			System.out.println("가격: " + quantity * price);
+
+			System.out.println();
+			System.out.println("1. 물품 주문");
+			System.out.println("0. 돌아가기");
+
+			while (true) {
+				System.out.print("> ");
+				String input = sc.nextLine().trim();
+
+				if (input.equals("0")) {
+					break;
+				} else if (input.equals("1")) {
+					increaseItem(itrs);
+					break;
+				} else {
+					System.out.println("잘못된 입력입니다.");
+				}
+			}
+
+			stmt2.close();
+			conn.commit();
+			menu.leave();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+	}
+
+	private static void increaseItem(ResultSet rs) {
+		Statement stmt2 = null;
+
+		try {
+			String code = rs.getString(1);
+			int quantity = rs.getInt(4);
+
+			System.out.println();
+			System.out.println("추가로 주문할 수량을 입력해 주세요.");
+			System.out.print("> ");
+			String input = sc.nextLine().trim();
+
+			if (ATOI(input) <= 0) {
+				System.out.println("잘못된 입력입니다.");
+			} else {
+				stmt2 = conn.createStatement();
+				sql = "UPDATE ITEM SET Stock = Stock + " + ATOI(input) * quantity + " WHERE Code = '" + code + "'";
+				stmt2.executeUpdate(sql);
+
+				System.out.println();
+				System.out.println("상품이 추가로 주문되었습니다.");
+
+				stmt2.close();
+				conn.commit();
+			}
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
 			System.exit(1);
@@ -2109,11 +2202,12 @@ public class Main {
 					sql = "INSERT INTO SHOPPINGBAG VALUES ('" + currentUser.getC_id() + "', '" + code + "', "
 							+ ATOI(input) * quantity + ")";
 				} else { // 장바구니에 해당 상품이 있는 경우
-					sql = "UPDATE SHOPPINGBAG SET Quantity = Quantity + " + ATOI(input) * quantity + " WHERE I_code = '" + code + "'";
+					sql = "UPDATE SHOPPINGBAG SET Quantity = Quantity + " + ATOI(input) * quantity + " WHERE I_code = '"
+							+ code + "'";
 				}
-				
+
 				stmt2.executeUpdate(sql);
-				
+
 				System.out.println();
 				System.out.println("장바구니에 상품이 담겼습니다.");
 
