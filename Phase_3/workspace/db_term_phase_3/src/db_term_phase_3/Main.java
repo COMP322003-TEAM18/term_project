@@ -1726,7 +1726,8 @@ public class Main {
 			} else if (input.equals("1")) {
 
 			} else if (input.equals("2")) {
-
+				menu.enter("검색");
+				searchItem();
 			} else {
 				System.out.println("잘못된 입력입니다.");
 			}
@@ -1740,6 +1741,154 @@ public class Main {
 		}
 
 		menu.leave();
+	}
+
+	private static void searchItem() {
+		System.out.println();
+		System.out.println(menu.path());
+		System.out.println(hr);
+		System.out.println("검색할 상품의 이름을 입력해주세요. 미입력 시 이전 메뉴로 돌아갑니다.");
+
+		while (true) {
+			System.out.print("> ");
+			String input = sc.nextLine().trim();
+
+			if (input.isEmpty()) {
+				break;
+			} else {
+				menu.enter("검색 결과");
+				showItemListByName(input);
+			}
+
+			System.out.println();
+			System.out.println(menu.path());
+			System.out.println(hr);
+			System.out.println("검색할 상품의 이름을 입력해주세요. 미입력 시 이전 메뉴로 돌아갑니다.");
+		}
+
+		menu.leave();
+	}
+
+	private static void showItemListByName(String itemName) {
+		try {
+			sql = "SELECT * FROM ITEM WHERE Name LIKE '%" + itemName + "%' ORDER BY Code ASC";
+			ResultSet rs = stmt.executeQuery(sql);
+
+			rs.last();
+			if (rs.getRow() == 0) {
+				System.out.println();
+				System.out.println("검색 결과가 없습니다.");
+			} else {
+				showItemList(rs);
+				System.out.println();
+				System.out.println("상세히 보고 싶은 상품의 연번을 입력해주세요. 미입력 시 이전 메뉴로 돌아갑니다.");
+				while (true) {
+					System.out.print("> ");
+					String input = sc.nextLine().trim();
+
+					rs.last();
+					if (input.isEmpty()) {
+						break;
+					} else if (ATOI(input) > rs.getRow() || ATOI(input) <= 0) {
+						System.out.println("잘못된 입력입니다.");
+					} else {
+						rs.beforeFirst();
+
+						for (int i = 0; i < ATOI(input); i++) {
+							rs.next();
+						}
+
+						String code = rs.getString(1);
+						menu.enter("상품 상세정보");
+						showItemInfo(code);
+
+						showItemList(rs);
+						System.out.println();
+						System.out.println("상세히 보고 싶은 상품의 연번을 입력해주세요. 미입력 시 이전 메뉴로 돌아갑니다.");
+					}
+				}
+			}
+
+			rs.close();
+			conn.commit();
+			menu.leave();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+	}
+
+	private static void showItemList(ResultSet rs) {
+		try {
+			rs.beforeFirst();
+			System.out.println();
+			System.out.println(menu.path());
+			System.out.println(hr);
+			System.out.format("%s\t%s\t%s\n", "연번", "품명", "규격");
+
+			int cnt = 1;
+			while (rs.next()) {
+				String name = rs.getString(2);
+				String spec = rs.getString(3);
+
+				System.out.format("%d\t%s\t%s\n", cnt++, name, spec);
+			}
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+	}
+
+	private static void showItemInfo(String code) {
+		Statement stmt2 = null;
+
+		try {
+			stmt2 = conn.createStatement();
+			sql = "SELECT * FROM ITEM WHERE Code = '" + code + "'";
+			ResultSet itrs = stmt2.executeQuery(sql);
+
+			itrs.next();
+			String name = itrs.getString(2);
+			String spec = itrs.getString(3);
+			int quantity = itrs.getInt(4);
+			String unit = itrs.getString(5);
+			int stock = itrs.getInt(6);
+			int price = itrs.getInt(7);
+			int min_quantity = itrs.getInt(8);
+
+			System.out.println();
+			System.out.println(menu.path());
+			System.out.println(hr);
+			System.out.println("품명: " + name);
+			System.out.println("규격: " + spec);
+			System.out.println("판매 단위: " + quantity + unit);
+			System.out.println("단가: " + price);
+			System.out.println("최소 주문 수량: " + min_quantity);
+			System.out.println("재고 수량: " + stock);
+			System.out.println("가격: " + quantity * price);
+
+			System.out.println();
+			System.out.println("1. 장바구니에 추가");
+			System.out.println("0. 돌아가기");
+
+			while (true) {
+				System.out.print("> ");
+				String input = sc.nextLine().trim();
+
+				if (input.equals("0")) {
+					break;
+				} else if (input.equals("1")) {
+
+				} else {
+					System.out.println("잘못된 입력입니다.");
+				}
+			}
+
+			menu.leave();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
 	}
 
 	public static void main(String[] args) {
