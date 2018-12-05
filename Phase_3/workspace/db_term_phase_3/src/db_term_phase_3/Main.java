@@ -525,16 +525,19 @@ public class Main {
 					String qLname = rs.getString(9);
 					String qJob = rs.getString(10);
 					String qType = rs.getString(11);
-					
-					currentUser = new User(qc_id, qUsername);
-					currentUser.setAddress(qAddress);
-					currentUser.setTel(qTel);
-					currentUser.setSex(qSex);
-					currentUser.setBdate(qBdate);
-					currentUser.setFname(qFname);
-					currentUser.setLname(qLname);
-					currentUser.setJob(qJob);
-					currentUser.setType(qType);		
+					// 추가정보 NULL일 시 "" 문자 출력
+					if(qSex != null) currentUser.setSex(qSex);
+					else currentUser.setSex("");
+					if(qBdate != null) currentUser.setBdate(qBdate);
+					else currentUser.setBdate("");
+					if(qFname != null) currentUser.setFname(qFname);
+					else currentUser.setFname("");
+					if(qLname != null) currentUser.setLname(qLname);
+					else currentUser.setLname("");
+					if(qJob != null) currentUser.setJob(qJob);
+					else currentUser.setJob("");
+					if(qType != null) currentUser.setType(qType);
+					else currentUser.setType("");
 			}
 				rs.close();
 				conn.commit();
@@ -645,16 +648,19 @@ public class Main {
 						String qLname = rs.getString(9);
 						String qJob = rs.getString(10);
 						String qType = rs.getString(11);
-						
-						currentUser = new User(qc_id, qUsername);
-						currentUser.setAddress(qAddress);
-						currentUser.setTel(qTel);
-						currentUser.setSex(qSex);
-						currentUser.setBdate(qBdate);
-						currentUser.setFname(qFname);
-						currentUser.setLname(qLname);
-						currentUser.setJob(qJob);
-						currentUser.setType(qType);
+						// 추가정보 NULL일 시 "" 문자 출력
+						if(qSex != null) currentUser.setSex(qSex);
+						else currentUser.setSex("");
+						if(qBdate != null) currentUser.setBdate(qBdate);
+						else currentUser.setBdate("");
+						if(qFname != null) currentUser.setFname(qFname);
+						else currentUser.setFname("");
+						if(qLname != null) currentUser.setLname(qLname);
+						else currentUser.setLname("");
+						if(qJob != null) currentUser.setJob(qJob);
+						else currentUser.setJob("");
+						if(qType != null) currentUser.setType(qType);
+						else currentUser.setType("");
 						result = true;
 					} else { // 비밀번호가 틀림
 						System.out.println("잘못된 비밀번호입니다.");
