@@ -1878,13 +1878,63 @@ public class Main {
 				if (input.equals("0")) {
 					break;
 				} else if (input.equals("1")) {
-
+					addToShoppingBag(itrs);
+					break;
 				} else {
 					System.out.println("잘못된 입력입니다.");
 				}
 			}
 
+			stmt2.close();
+			conn.commit();
 			menu.leave();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+	}
+
+	private static void addToShoppingBag(ResultSet rs) {
+		Statement stmt2 = null;
+
+		try {
+			String code = rs.getString(1);
+			int quantity = rs.getInt(4);
+			int min_quantity = rs.getInt(8);
+
+			System.out.println();
+			System.out.println("장바구니에 추가할 수량을 입력해 주세요.");
+			System.out.print("> ");
+			String input = sc.nextLine().trim();
+
+			if (ATOI(input) <= 0) {
+				System.out.println("잘못된 입력입니다.");
+			} else if (ATOI(input) * quantity < min_quantity) {
+				System.out.println("주문 수량이 최소 주문 수량에 미달합니다.");
+			} else {
+				// 우선 사용자의 장바구니에 해당 상품이 있는지를 검색
+				sql = "SELECT * FROM SHOPPINGBAG WHERE C_id = '" + currentUser.getC_id() + "' AND I_code = '" + code
+						+ "'";
+				stmt2 = conn.createStatement();
+				ResultSet brs = stmt2.executeQuery(sql);
+
+				brs.last();
+				if (brs.getRow() == 0) { // 장바구니에 해당 상품이 없는 경우
+					sql = "INSERT INTO SHOPPINGBAG VALUES ('" + currentUser.getC_id() + "', '" + code + "', "
+							+ ATOI(input) * quantity + ")";
+				} else { // 장바구니에 해당 상품이 있는 경우
+					sql = "UPDATE SHOPPINGBAG SET Quantity = Quantity + " + ATOI(input) * quantity + " WHERE I_code = '" + code + "'";
+				}
+				
+				stmt2.executeUpdate(sql);
+				
+				System.out.println();
+				System.out.println("장바구니에 상품이 담겼습니다.");
+
+				brs.close();
+				stmt2.close();
+				conn.commit();
+			}
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
 			System.exit(1);
