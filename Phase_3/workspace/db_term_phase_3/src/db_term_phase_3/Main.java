@@ -1,7 +1,9 @@
 package db_term_phase_3;
 
 import java.sql.*;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Scanner;
 import java.util.logging.Logger;
 
@@ -477,7 +479,8 @@ public class Main {
 			} else if (input.equals("2")) {
 
 			} else if (input.equals("3")) {
-
+				menu.enter("매출 확인");
+				searchSale();
 			} else if (input.equals("4")) {
 
 			} else if (input.equals("0")) {
@@ -504,6 +507,140 @@ public class Main {
 		}
 
 		menu.leave();
+	}
+	
+	private static void searchSale() {		
+		// 매출 확인. 총 매출을 우선 출력
+		// 전체 | YYYY | YYYY-MM 중 하나를 입력 받아 결과 출력
+		// 전체 : 연도 별 매출 출력
+		// YYYY : 해당 연도 월별 매출 출력
+		// YYYY-MM : 해당 연/월 일별 매출 출력
+		String totalSale = null;
+		System.out.println();
+		System.out.println(menu.path());
+		System.out.println(hr);
+		getSale("총 매출", null);
+		System.out.println("다음 중 하나를 입력할 수 있습니다 : ( 전체 | YYYY | YYYY-MM )");
+		System.out.println("전체 : 연도 별 매출 출력");
+		System.out.println("YYYY : 해당 연도 월별 매출 출력");
+		System.out.println("YYYY-MM : 해당 연/월 일별 매출 출력");
+		System.out.println("공백을 입력할 시 종료합니다.");
+
+		while (true) {
+			System.out.print("> ");
+			String date = sc.nextLine().trim();
+			System.out.println();
+			System.out.println(date + " 에 대한 검색 결과");
+			if(date.length() <= 0) {
+				System.out.println("공백을 입력하였습니다. 매출 확인을 종료합니다.");
+				menu.leave();
+				break;
+			}
+			boolean date_check = true;
+			String fail_reason = "";
+			// validation check: 정규식(전화번호)
+			if (date.matches("^(전체)$")) {	// '전체'일 경우
+				getSale("전체", null);
+			} else if (date.matches("^(19|20|21)\\d{2}$")) { // YYYY 일 경우
+				getSale("YYYY", date);
+			} else if (date.matches("^(19|20|21)\\d{2}-(0[1-9]|1[012])$")) {	// YYYY-MM 일 경우
+				getSale("YYYY-MM", date);
+			}
+			else {
+				date_check = false;
+				fail_reason += "\t올바른 형식이 아닙니다. ( 전체 | YYYY | YYYY-MM )\n";
+			}
+			
+			if (date_check) {	// 생성가능한 생년월일일 경우
+				System.out.println();
+				System.out.println("매출 확인");
+				System.out.println(hr);
+				getSale("총 매출", null);
+				System.out.println("다음 중 하나를 입력할 수 있습니다 : ( 전체 | YYYY | YYYY-MM )");
+				System.out.println("전체 : 연도 별 매출 출력");
+				System.out.println("YYYY : 해당 연도 월별 매출 출력");
+				System.out.println("YYYY-MM : 해당 연/월 일별 매출 출력");
+				System.out.println("공백을 입력할 시 종료합니다.");
+			} else {	// 생성이 불가능할 경우
+				System.out.println("잘못된 형식입니다. 다시 입력해 주세요.");
+				System.out.printf("\t사유: \n" + fail_reason);
+			}
+		}
+
+	}
+
+	private static void getSale(String input, String input_date) {
+		// SELECT : 폼에 맞게 값을 가져옴
+		String totalSale = null;
+		if (input.equals("총 매출")) {
+			sql = "SELECT SUM(i.Price*ol2.Quantity) AS TotalCost FROM ITEM i\n"
+					+ "INNER JOIN (SELECT ol.So_id, ol.I_code, ol.Quantity FROM ORDER_LIST ol \n"
+					+ "INNER JOIN (SELECT so.So_id FROM SHIPPINGORDER so) AS so2\n" + "ON ol.So_id=so2.So_id) AS ol2\n"
+					+ "ON i.Code=ol2.I_code";
+		} else if (input.equals("전체")) {
+			sql = "SELECT ol2.Date, SUM(i.Price*ol2.Quantity) AS TotalCost FROM ITEM i\n"
+					+ "INNER JOIN (SELECT so2.Date, ol.So_id, ol.I_code, ol.Quantity FROM ORDER_LIST ol \n"
+					+ "INNER JOIN (SELECT DATE_FORMAT(so.Otime, \"%Y\") AS Date, so.So_id FROM SHIPPINGORDER so) AS so2\n"
+					+ "ON ol.So_id=so2.So_id) AS ol2\n" + "ON i.Code=ol2.I_code\n" + "GROUP BY ol2.Date";
+		} else if (input.equals("YYYY")) {
+			sql = "SELECT ol2.Date, SUM(i.Price*ol2.Quantity) AS TotalCost FROM ITEM i\n"
+					+ "INNER JOIN (SELECT so2.Date, ol.So_id, ol.I_code, ol.Quantity FROM ORDER_LIST ol \n"
+					+ "INNER JOIN (SELECT DATE_FORMAT(so.Otime, \"%Y-%m\") AS Date, so.So_id FROM SHIPPINGORDER so WHERE so.Otime BETWEEN date(\""
+					+ input_date + "-01-01\") and date(\"" + String.format("%d", Integer.parseInt(input_date) + 1)
+					+ "-01-01\")) AS so2\n" + "ON ol.So_id=so2.So_id) AS ol2\n" + "ON i.Code=ol2.I_code\n"
+					+ "GROUP BY ol2.Date;";
+		} else if (input.equals("YYYY-MM")) {
+			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+			java.util.Date date;
+			Calendar cal;
+			try {
+				date = df.parse(input_date + "-01");
+				// 날짜 더하기
+				cal = Calendar.getInstance();
+				cal.setTime(date);
+				cal.add(Calendar.MONTH, 1);
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("변환할 수 없습니다. 알 수 없는 오류");
+				totalSale = "알 수 없음";
+				System.out.println("매출 : " + totalSale);
+				return;
+			}
+			sql = "SELECT ol2.Date, SUM(i.Price*ol2.Quantity) AS TotalCost FROM ITEM i\n"
+					+ "INNER JOIN (SELECT so2.Date, ol.So_id, ol.I_code, ol.Quantity FROM ORDER_LIST ol \n"
+					+ "INNER JOIN (SELECT DATE_FORMAT(so.Otime, \"%Y-%m-%d\") AS Date, so.So_id FROM SHIPPINGORDER so WHERE so.Otime BETWEEN date(\""
+					+ input_date + "-01\") and date(\"" + df.format(cal.getTime()) + "-01\")) AS so2\n"
+					+ "ON ol.So_id=so2.So_id) AS ol2\n" + "ON i.Code=ol2.I_code\n" + "GROUP BY ol2.Date";
+		}
+
+		try {
+			ResultSet rs = stmt.executeQuery(sql);
+
+			rs.last(); // 커서를 맨 뒤로 옮김
+			if (rs.getRow() == 0) {
+				System.out.println("해당 기간에는 매출이 존재하지 않습니다.");
+				totalSale = "매출 없음";
+			} else {
+				rs.beforeFirst(); // 커서를 맨 앞으로 옮김
+				while (rs.next()) {
+					if (input.equals("총 매출")) {
+						totalSale = rs.getString(1);
+						System.out.println("현재까지 총 매출 : " + String.format("%,d", Integer.parseInt(totalSale)));
+					} else {
+						String qDate = rs.getString(1);
+						totalSale = rs.getString(2);
+						System.out.printf("%s | %s\n", qDate, String.format("%,d", Integer.parseInt(totalSale)));
+					}
+				}
+				rs.close();
+				conn.commit();
+			}
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.out.println("매출 확인을 수행하는데 문제가 발생했습니다. 나중에 다시 시도해 주세요");
+			totalSale = "값을 가져올 수 없습니다.";
+			System.out.println("매출 : " + totalSale);
+		}
 	}
 
 	private static void customerMainScreen() {
