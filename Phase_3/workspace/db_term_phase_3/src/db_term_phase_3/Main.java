@@ -177,7 +177,7 @@ public class Main {
 			sql = "DELETE FROM SHOPPINGBAG WHERE C_id = '" + currentUser.getC_id() + "'";
 
 			stmt.addBatch(sql);
-			int[] count = stmt.executeBatch();
+			stmt.executeBatch();
 			System.out.println("장바구니를 비웠습니다.");
 			conn.commit();
 			stmt.clearBatch();
@@ -274,7 +274,7 @@ public class Main {
 						+ "'";
 				stmt2.addBatch(sql);
 			}
-			int[] count = stmt2.executeBatch();
+			stmt2.executeBatch();
 			stmt2.clearBatch();
 			itemrs.close();
 
@@ -452,7 +452,184 @@ public class Main {
 
 			if (rs != null)
 				rs.close();
+
+			menu.leave();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+	}
+
+	public static ResultSet showOrderLog() {
+		ResultSet rs = null;
+
+		try {
+			sql = "SELECT * FROM SHIPPINGORDER WHERE C_id = '" + currentUser.getC_id() + "'";
+
+			rs = stmt.executeQuery(sql);
+
+			rs.last(); // 커서를 맨 뒤로 옮김
+			if (rs.getRow() == 0) {
+				System.out.println("구매내역이 없습니다.");
+				conn.commit();
+			} else {
+				rs.beforeFirst(); // 커서를 맨 앞으로 옮김
+
+				System.out.format("%s\t%s\n", "연번", "구매시각");
+
+				int cnt = 1;
+				while (rs.next()) {
+					Timestamp otime = rs.getTimestamp(5);
+					System.out.format("%d\t%s\n", cnt++, otime.toString().split("\\.")[0]);
+				}
+				conn.commit();
+			}
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+
+		return rs;
+	}
+
+	private static void showDetailOrderInfo(ResultSet rs) {
+		try {
+			System.out.println("[상세 정보]");
+			String address = rs.getString(2);
+			String name = rs.getString(3);
+			String tel = rs.getString(4);
+			Timestamp otime = rs.getTimestamp(5);
+			System.out.println("주소: " + address);
+			System.out.println("수령자 성명: " + name);
+			System.out.println("수령자 연락처: " + tel);
+			System.out.println("주문 시각: " + otime.toString().split("\\.")[0]);
+			System.out.println();
+
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+	}
+
+	private static void showOrderList(String so_id) {
+		Statement stmt2 = null;
+
+		try {
+			stmt2 = conn.createStatement();
+			sql = "SELECT I.Name, I.Spec, O.Quantity FROM ITEM I, ORDER_LIST O WHERE O.So_id = '" + so_id + "' AND O.I_code = I.Code";
+			ResultSet olrs = stmt2.executeQuery(sql);
+
+			System.out.println("[구매 상품 목록]");
+			System.out.format("%s\t%s\t%s\t%s\n", "연번", "품명", "규격", "주문수량");
 			
+			int cnt = 1;
+			while (olrs.next()) {
+				String name = olrs.getString(1);
+				String spec = olrs.getString(2);
+				int quantity = olrs.getInt(3);
+				System.out.format("%d\t%s\t%s\t%s\n", cnt++, name, spec, quantity);
+			}
+
+			conn.commit();
+			stmt2.close();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+	}
+
+	public static void detailOrder(ResultSet rs) {
+		try {
+			String so_id = rs.getString(1);
+
+			System.out.println();
+			System.out.println(menu.path());
+			System.out.println(hr);
+			showDetailOrderInfo(rs);
+			showOrderList(so_id);
+			System.out.println();
+			System.out.println("0. 돌아가기");
+
+			while (true) {
+				System.out.print("> ");
+				String input = sc.nextLine().trim();
+
+				if (input.equals("0")) {
+					break;
+				} else {
+					System.out.println("잘못된 입력입니다.");
+				}
+
+				System.out.println();
+				System.out.println(menu.path());
+				System.out.println(hr);
+				showDetailOrderInfo(rs);
+				showOrderList(so_id);
+				System.out.println();
+				System.out.println("0. 돌아가기");
+			}
+
+			menu.leave();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
+	}
+
+	public static void orderLogScreen() {
+		try {
+			System.out.println();
+			System.out.println(menu.path());
+			System.out.println(hr);
+			ResultSet rs = showOrderLog();
+			System.out.println();
+			System.out.println("1. 구매내역 상세 보기");
+			System.out.println("0. 돌아가기");
+
+			while (true) {
+				System.out.print("> ");
+				String input = sc.nextLine().trim();
+
+				if (input.equals("0")) {
+					break;
+				} else {
+					// 구매내역이 없는지 확인
+					rs.last();
+					if (rs.getRow() == 0) {
+						System.out.println("구매내역이 없습니다.");
+					} else if (input.equals("1")) {
+						System.out.println("조회할 구매내역의 연번을 입력하세요.");
+						System.out.print("> ");
+						input = sc.nextLine().trim();
+
+						if (ATOI(input) > rs.getRow() || ATOI(input) <= 0) {
+							System.out.println("잘못된 입력입니다.");
+						} else {
+							rs.beforeFirst();
+							for (int i = 0; i < ATOI(input); i++) {
+								rs.next();
+							}
+							menu.enter("구매내역 상세 보기");
+							detailOrder(rs);
+						}
+					} else {
+						System.out.println("잘못된 입력입니다.");
+					}
+				}
+
+				rs.close();
+				System.out.println();
+				System.out.println(menu.path());
+				System.out.println(hr);
+				rs = showOrderLog();
+				System.out.println();
+				System.out.println("1. 구매내역 상세 보기");
+				System.out.println("0. 돌아가기");
+			}
+
+			if (rs != null)
+				rs.close();
+
 			menu.leave();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
@@ -665,7 +842,8 @@ public class Main {
 				menu.enter("장바구니");
 				bagScreen();
 			} else if (input.equals("4")) {
-
+				menu.enter("구매내역 조회");
+				orderLogScreen();
 			} else if (input.equals("0")) {
 				currentUser = null;
 				System.out.println("성공적으로 로그아웃하였습니다.");
