@@ -25,22 +25,43 @@ public class Main {
 	private static Scanner sc;
 	private static String hr = "----------------------------------------------------------------------";
 
-	public static int ATOI(String sTmp) {
-		String tTmp = "0", cTmp = "";
+	public static int ATOI(String str) {
+		if (str == null || str.length() < 1)
+			return 0;
 
-		sTmp = sTmp.trim();
-		for (int i = 0; i < sTmp.length(); i++) {
-			cTmp = sTmp.substring(i, i + 1);
-			if (cTmp.equals("0") || cTmp.equals("1") || cTmp.equals("2") || cTmp.equals("3") || cTmp.equals("4")
-					|| cTmp.equals("5") || cTmp.equals("6") || cTmp.equals("7") || cTmp.equals("8") || cTmp.equals("9"))
-				tTmp += cTmp;
-			else if (cTmp.equals("-") && i == 0)
-				tTmp = "-";
-			else
-				break;
+		// trim white spaces
+		str = str.trim();
+
+		char flag = '+';
+
+		// check negative or positive
+		int i = 0;
+		if (str.charAt(0) == '-') {
+			flag = '-';
+			i++;
+		} else if (str.charAt(0) == '+') {
+			i++;
+		}
+		// use double to store result
+		double result = 0;
+
+		// calculate value
+		while (str.length() > i && str.charAt(i) >= '0' && str.charAt(i) <= '9') {
+			result = result * 10 + (str.charAt(i) - '0');
+			i++;
 		}
 
-		return (ATOI(tTmp));
+		if (flag == '-')
+			result = -result;
+
+		// handle max and min
+		if (result > Integer.MAX_VALUE)
+			return Integer.MAX_VALUE;
+
+		if (result < Integer.MIN_VALUE)
+			return Integer.MIN_VALUE;
+
+		return (int) result;
 	}
 
 	public static void rootScreen() {
@@ -132,7 +153,6 @@ public class Main {
 			System.err.println("sql error = " + ex.getMessage());
 			System.exit(1);
 		}
-
 	}
 
 	public static void signupScreen() {
@@ -493,7 +513,7 @@ public class Main {
 			}
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("장바구니를 불러올 수 없습니다.");
 		}
 
 		return rs;
@@ -510,7 +530,7 @@ public class Main {
 			stmt.clearBatch();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("장바구니를 비울 수 없습니다.");
 		}
 	}
 
@@ -550,7 +570,7 @@ public class Main {
 			}
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("장바구니에서 상품을 지울 수 없습니다.");
 		}
 	}
 
@@ -728,7 +748,7 @@ public class Main {
 			stmt2.close();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("장바구니에서 상품을 구매할 수 없습니다.");
 		}
 	}
 
@@ -779,12 +799,12 @@ public class Main {
 
 			if (rs != null)
 				rs.close();
-
-			menu.leave();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("장바구니를 불러올 수 없습니다.");
 		}
+
+		menu.leave();
 	}
 
 	public static ResultSet showOrderLog() {
@@ -813,7 +833,7 @@ public class Main {
 			}
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("구매내역을 불러올 수 없습니다.");
 		}
 
 		return rs;
@@ -862,7 +882,7 @@ public class Main {
 			stmt2.close();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("구매내역을 불러올 수 없습니다.");
 		}
 	}
 
@@ -896,12 +916,12 @@ public class Main {
 				System.out.println();
 				System.out.println("0. 돌아가기");
 			}
-
-			menu.leave();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("구매 상세내역을 불러올 수 없습니다.");
 		}
+
+		menu.leave();
 	}
 
 	public static void orderLogScreen() {
@@ -957,12 +977,12 @@ public class Main {
 
 			if (rs != null)
 				rs.close();
-
-			menu.leave();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("구매내역을 불러올 수 없습니다.");
 		}
+
+		menu.leave();
 	}
 
 	private static void searchOutOfSold() {
@@ -999,6 +1019,7 @@ public class Main {
 			System.err.println("sql error = " + ex.getMessage());
 			System.out.println("조회 중에 문제가 발생했습니다. 다시 시도해 주세요");
 		}
+
 		menu.leave();
 	}
 
@@ -1074,11 +1095,12 @@ public class Main {
 
 			rs.close();
 			conn.commit();
-			menu.leave();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("배송 횟수를 조회할 수 없습니다.");
 		}
+
+		menu.leave();
 	}
 
 	private static void searchSale() {
@@ -1601,6 +1623,9 @@ public class Main {
 					String qLname = rs.getString(9);
 					String qJob = rs.getString(10);
 					String qType = rs.getString(11);
+					currentUser.setC_id(qc_id);
+					currentUser.setAddress(qAddress);
+					currentUser.setTel(qTel);
 					// 추가정보 NULL일 시 "" 문자 출력
 					if (qSex != null)
 						currentUser.setSex(qSex);
@@ -1736,6 +1761,9 @@ public class Main {
 						String qLname = rs.getString(9);
 						String qJob = rs.getString(10);
 						String qType = rs.getString(11);
+						currentUser.setC_id(qc_id);
+						currentUser.setAddress(qAddress);
+						currentUser.setTel(qTel);
 						// 추가정보 NULL일 시 "" 문자 출력
 						if (qSex != null)
 							currentUser.setSex(qSex);
@@ -2038,7 +2066,6 @@ public class Main {
 				while (true) {
 					System.out.print("> ");
 					String input = sc.nextLine().trim();
-
 					rs.last();
 					if (input.isEmpty()) {
 						break;
@@ -2069,11 +2096,12 @@ public class Main {
 
 			rs.close();
 			conn.commit();
-			menu.leave();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("상품을 검색할 수 없습니다.");
 		}
+
+		menu.leave();
 	}
 
 	private static void showItemInfoAdmin(String code) {
@@ -2125,11 +2153,12 @@ public class Main {
 
 			stmt2.close();
 			conn.commit();
-			menu.leave();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("상품 상세 정보를 불러올 수 없습니다.");
 		}
+
+		menu.leave();
 	}
 
 	private static void increaseItem(ResultSet rs) {
@@ -2159,7 +2188,7 @@ public class Main {
 			}
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("상품을 주문할 수 없습니다.");
 		}
 	}
 
@@ -2180,7 +2209,7 @@ public class Main {
 			}
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("상품 목록을 불러올 수 없습니다.");
 		}
 	}
 
@@ -2232,11 +2261,12 @@ public class Main {
 
 			stmt2.close();
 			conn.commit();
-			menu.leave();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("상품 상세 정보를 불러올 수 없습니다.");
 		}
+
+		menu.leave();
 	}
 
 	private static void addToShoppingBag(ResultSet rs) {
@@ -2283,7 +2313,7 @@ public class Main {
 			}
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
-			System.exit(1);
+			System.err.println("상품을 장바구니에 추가할 수 없습니다.");
 		}
 	}
 
@@ -2292,7 +2322,7 @@ public class Main {
 
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver");
-			LOG.info("JDBC Driver founded.");
+			// LOG.info("JDBC Driver founded.");
 		} catch (ClassNotFoundException e) {
 			System.err.println("error = " + e.getMessage());
 			System.exit(1);
