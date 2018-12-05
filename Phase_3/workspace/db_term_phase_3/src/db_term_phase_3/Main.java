@@ -15,11 +15,14 @@ public class Main {
 
 	private static User currentUser = null;
 
+	private static Menu menu = null;
+
 	private static Logger LOG;
 	private static Scanner sc;
 	private static String hr = "----------------------------------------------------------------------";
 
 	public static void rootScreen() {
+		menu = new Menu();
 		sc = new Scanner(System.in);
 
 		System.out.println();
@@ -66,8 +69,10 @@ public class Main {
 		System.out.print("> ");
 		String password = sc.nextLine().trim();
 		// TODO 비밀번호 입력 암호화.
-		/*Console cons = System.console();
-		String password = new String(cons.readPassword());*/
+		/*
+		 * Console cons = System.console(); String password = new
+		 * String(cons.readPassword());
+		 */
 
 		try {
 			sql = "SELECT C_id, Password FROM CUSTOMER WHERE Username = '" + username + "'";
@@ -85,8 +90,10 @@ public class Main {
 						currentUser = new User(c_id, username);
 
 						if (c_id.charAt(0) == 'A') { // 관리자 계정
+							menu.enter("관리자 메뉴");
 							adminMainScreen();
 						} else { // 일반 계정
+							menu.enter("쇼핑몰 X");
 							customerMainScreen();
 						}
 					} else { // 비밀번호가 틀림
@@ -109,7 +116,7 @@ public class Main {
 
 	public static void adminMainScreen() {
 		System.out.println();
-		System.out.println("관리자 메뉴");
+		System.out.println(menu.path());
 		System.out.println(hr);
 		System.out.println("1. 물품 주문");
 		System.out.println("2. 재고 부족 상품 조회");
@@ -130,16 +137,20 @@ public class Main {
 			} else if (input.equals("4")) {
 
 			} else if (input.equals("0")) {
-				currentUser = null;	// 로그아웃 시 
+				currentUser = null; // 로그아웃 시
 				System.out.println("성공적으로 로그아웃하였습니다.");
 				break;
 			} else {
 				System.out.println("잘못된 입력입니다.");
 				continue;
 			}
+			// currentUser == null -> 로그아웃이 강제되는 상황일 경우
+			if (currentUser == null) {
+				break;
+			}
 
 			System.out.println();
-			System.out.println("관리자 메뉴");
+			System.out.println(menu.path());
 			System.out.println(hr);
 			System.out.println("1. 물품 주문");
 			System.out.println("2. 재고 부족 상품 조회");
@@ -147,11 +158,13 @@ public class Main {
 			System.out.println("4. 배송 업체 별 배송 횟수 조회");
 			System.out.println("0. 로그아웃");
 		}
+
+		menu.leave();
 	}
 
 	private static void customerMainScreen() {
 		System.out.println();
-		System.out.println("메인 메뉴");
+		System.out.println(menu.path());
 		System.out.println(hr);
 		System.out.println("1. 계정 관리");
 		System.out.println("2. 상품 조회");
@@ -164,7 +177,7 @@ public class Main {
 			String input = sc.nextLine().trim();
 
 			if (input.equals("1")) {
-				//accountSetting();
+				// accountSetting();
 			} else if (input.equals("2")) {
 
 			} else if (input.equals("3")) {
@@ -183,9 +196,9 @@ public class Main {
 			if (currentUser == null) {
 				break;
 			}
-			
+
 			System.out.println();
-			System.out.println("메인 메뉴");
+			System.out.println(menu.path());
 			System.out.println(hr);
 			System.out.println("1. 계정 관리");
 			System.out.println("2. 상품 조회");
@@ -193,6 +206,8 @@ public class Main {
 			System.out.println("4. 구매내역 조회");
 			System.out.println("0. 로그아웃");
 		}
+
+		menu.leave();
 	}
 
 	public static void main(String[] args) {
@@ -221,7 +236,7 @@ public class Main {
 			stmt.close();
 			conn.close();
 		} catch (SQLException ex) {
-			System.err.println("Cannot get a connection: " + ex.getMessage());
+			System.err.println("Cannot close: " + ex.getMessage());
 			System.exit(1);
 		}
 	}
