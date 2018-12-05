@@ -406,7 +406,7 @@ public class Main {
 	public static void bagScreen() {
 		try {
 			System.out.println();
-			System.out.println("장바구니");
+			System.out.println(menu.path());
 			System.out.println(hr);
 			ResultSet rs = showBag();
 			System.out.println();
@@ -439,7 +439,7 @@ public class Main {
 
 				rs.close();
 				System.out.println();
-				System.out.println("장바구니");
+				System.out.println(menu.path());
 				System.out.println(hr);
 				rs = showBag();
 				System.out.println();
@@ -450,6 +450,8 @@ public class Main {
 
 			if (rs != null)
 				rs.close();
+			
+			menu.leave();
 		} catch (SQLException ex) {
 			System.err.println("sql error = " + ex.getMessage());
 			System.exit(1);
@@ -523,6 +525,7 @@ public class Main {
 			} else if (input.equals("2")) {
 
 			} else if (input.equals("3")) {
+				menu.enter("장바구니");
 				bagScreen();
 			} else if (input.equals("4")) {
 
