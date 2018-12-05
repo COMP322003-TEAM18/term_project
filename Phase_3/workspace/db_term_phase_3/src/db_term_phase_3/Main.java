@@ -965,6 +965,43 @@ public class Main {
 		}
 	}
 
+	private static void searchOutOfSold() {
+		// 재고 부족 상품 조회
+		//
+		System.out.println();
+		System.out.println(menu.path());
+		System.out.println(hr);
+
+		// SELECT 쿼리 실행
+		try {
+			sql = "SELECT i.Name, i.Spec, i.Stock, i.Min_quantity" + " FROM ITEM i WHERE i.Stock < i.Min_quantity";
+			ResultSet rs = stmt.executeQuery(sql);
+
+			rs.last(); // 커서를 맨 뒤로 옮김
+			if (rs.getRow() == 0) {
+				System.out.println("재고가 부족한 상품이 없습니다.");
+				System.out.println("작업을 종료합니다.");
+			} else {
+				rs.beforeFirst(); // 커서를 맨 앞으로 옮김
+				System.out.println(String.format("[ %s   | %s   | %s   | %s   ]", "제품명", "규격", "재고", "최소수량"));
+				while (rs.next()) {
+					String qName = rs.getString(1);
+					String qSpec = rs.getString(2);
+					String qStock = rs.getString(3);
+					String qMin_quantity = rs.getString(4);
+					System.out.println(
+							String.format("[ %s   | %s   | %s   | %s   ]", qName, qSpec, qStock, qMin_quantity));
+				}
+				rs.close();
+				conn.commit();
+			}
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.out.println("조회 중에 문제가 발생했습니다. 다시 시도해 주세요");
+		}
+		menu.leave();
+	}
+
 	public static void adminMainScreen() {
 		System.out.println();
 		System.out.println(menu.path());
@@ -983,7 +1020,8 @@ public class Main {
 				menu.enter("물품 주문");
 				searchItem();
 			} else if (input.equals("2")) {
-
+				menu.enter("재고 부족 상품 조회");
+				searchOutOfSold();
 			} else if (input.equals("3")) {
 				menu.enter("매출 확인");
 				searchSale();
