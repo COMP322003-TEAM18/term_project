@@ -3,6 +3,7 @@ package db_term_phase_3;
 import java.sql.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Scanner;
 import java.util.logging.Logger;
@@ -1724,7 +1725,8 @@ public class Main {
 			if (input.equals("0")) {
 				break;
 			} else if (input.equals("1")) {
-
+				menu.enter("카테고리 별 조회");
+				showItemListByCategory();
 			} else if (input.equals("2")) {
 				menu.enter("검색");
 				searchItem();
@@ -1740,6 +1742,190 @@ public class Main {
 			System.out.println("0. 돌아가기");
 		}
 
+		menu.leave();
+	}
+
+	private static void showItemListByCategory() {
+		// 카테고리 별 상품 조회
+		// 대분류 -> 중분류 -> 소분류 순서대로 제시 후 선택
+		// 소분류 선택 시 showItemList() 메소드 호출
+		// 상품 선택 시 showItemInfo() 메소드 호출
+		System.out.println();
+		System.out.println(menu.path());
+		System.out.println(hr);
+		System.out.println("카테고리 별 상품 조회를 진행합니다. 항목의 번호를 입력해주세요");
+		System.out.println("0번 입력 시 이전 항목으로 돌아갑니다.");
+		ArrayList<String> selected_category_id = new ArrayList<String>();
+		ArrayList<String> selected_category_name = new ArrayList<String>();
+		ArrayList<String> current_id_list = new ArrayList<String>();
+		ArrayList<String> current_name_list = new ArrayList<String>();
+
+		// 소분류까지 모두 선택 시 ShowItemList() 호출
+		while (selected_category_id.size() < 3) {
+			int cnt = 0;
+			System.out.println();
+			System.out.print("현재 선택된 카테고리: ");
+			for (int i = 0; i < selected_category_id.size(); i++) {
+				System.out.print(selected_category_name.get(i) + " >> ");
+			}
+			System.out.println();
+			current_id_list.clear();
+			current_name_list.clear();
+			sql = "SELECT * FROM ";
+			// 대/중/소분류 선택에 따른 sql문 변경
+			switch (selected_category_id.size()) {
+			case 0: // 대분류 선택
+				sql += "L_CATEGORY lc";
+				System.out.println("[대분류를 선택해주세요]");
+				break;
+			case 1: // 중분류 선택
+				sql += "M_CATEGORY mc WHERE mc.Lc_id='" + selected_category_id.get(0) + "'";
+				System.out.println("[중분류를 선택해주세요]");
+				break;
+			case 2: // 소분류 선택
+				sql += "S_CATEGORY sc WHERE sc.Mc_id='" + selected_category_id.get(1) + "'";
+				System.out.println("[소분류를 선택해주세요]");
+				break;
+			}
+			// SELECT Query 진행
+			try {
+				ResultSet rs = stmt.executeQuery(sql);
+				rs.last(); // 커서를 맨 뒤로 옮김
+				if (rs.getRow() == 0) { // 정상적인 상황에서 수행되지 않음.
+					System.out.println("해당 카테고리에 하위 항목이 없습니다.");
+				} else {
+					rs.beforeFirst(); // 커서를 맨 앞으로 옮김
+					while (rs.next()) {
+						cnt++;
+						String qC_id = rs.getString(1);
+						String qName = rs.getString(2);
+						current_id_list.add(qC_id);
+						current_name_list.add(qName);
+						System.out.printf("%2d. %s\n", cnt, qName);
+					}
+					System.out.printf("%2d. %s\n", 0, "돌아가기");
+					rs.close();
+					conn.commit();
+				}
+			} catch (SQLException ex) {
+				System.err.println("sql error = " + ex.getMessage());
+				System.out.println("카테고리 검색을 진행하는데 문제가 발생했습니다. 나중에 다시 시도해 주세요");
+				menu.leave();
+				return;
+			}
+			String input;
+			// 사용자로부터 입력 받음
+			while (true) {
+				System.out.print("> ");
+				input = sc.nextLine().trim();
+				boolean input_check = true;
+				String fail_reason = "";
+				String pattern = "^[0-9]*$";
+				// validation check: 정규식(숫자)
+				if (!input.matches(pattern)) { // 정규식 불일치
+					input_check = false;
+					fail_reason += "\t번호를 입력해 주세요.\n";
+				} else { // 정규식이 일치하는 경우
+					// 나열된 번호 내에서 입력하지 않은 경우
+					if (Integer.parseInt(input) > current_id_list.size() || Integer.parseInt(input) < 0) {
+						input_check = false;
+						fail_reason += "\t나열된 항목 내에서 번호를 선택해 주세요.\n";
+					}
+				}
+
+				if (input_check) { // 선택이 가능한 경우
+					break;
+				} else { // 선택이 불가능한 경우
+					System.out.println("잘못된 입력입니다. 다시 입력해 주세요.");
+					System.out.printf("\t사유: \n" + fail_reason);
+				}
+			}
+
+			if (input.equals("0")) {
+				if (selected_category_id.size() > 0) { // 이전 카테고리 검색으로 돌아가는 경우
+					System.out.println("이전으로 돌아갑니다.");
+					selected_category_id.remove(selected_category_id.size() - 1);
+					selected_category_name.remove(selected_category_name.size() - 1);
+				} else { // 카테고리 별 검색을 종료하는 경우
+					System.out.println("카테고리 별 검색을 취소합니다.");
+					menu.leave();
+					return;
+				}
+			} else {
+				System.out.println(current_name_list.get(Integer.parseInt(input) - 1) + "를(을) 선택했습니다.");
+				selected_category_id.add(current_id_list.get(Integer.parseInt(input) - 1));
+				selected_category_name.add(current_name_list.get(Integer.parseInt(input) - 1));
+			}
+		}
+
+		sql = "SELECT * FROM ITEM WHERE Sc_id='" + selected_category_id.get(2) + "'";
+		ResultSet rs;
+		// 소분류로 아이템 검색 -> 이후 showItemList 진행
+		try {
+			rs = stmt.executeQuery(sql);
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.out.println("카테고리 검색을 진행하는데 문제가 발생했습니다. 나중에 다시 시도해 주세요");
+			menu.leave();
+			return;
+		}
+		showItemList(rs);
+		String input;
+		// 사용자로부터 입력 받음
+		while (true) {
+			System.out.println();
+			System.out.println("상세히 보고 싶은 상품의 연번을 입력해주세요. 미입력 시 이전 메뉴로 돌아갑니다.");
+			System.out.print("> ");
+			input = sc.nextLine().trim();
+			if( input.length() <= 0) {
+				System.out.println("이전 메뉴로 돌아갑니다.");
+				break;
+			}
+			boolean input_check = true;
+			String fail_reason = "";
+			String pattern = "^[0-9]*$";
+			// validation check: 정규식(숫자)
+			if (!input.matches(pattern)) { // 정규식 불일치
+				input_check = false;
+				fail_reason += "\t번호를 입력해 주세요.\n";
+			} else { // 정규식이 일치하는 경우
+				// 나열된 번호 내에서 입력하지 않은 경우
+				try {
+					rs.last();
+					if (ATOI(input) > rs.getRow() || ATOI(input) <= 0) {
+						input_check = false;
+						fail_reason += "\t나열된 항목 내에서 번호를 선택해 주세요.\n";
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+					System.out.println("검색 중 문제가 발생했습니다. 나중에 다시 시도해 주세요");
+					menu.leave();
+					return;
+				}
+			}
+
+			if (input_check) { // 선택이 가능한 경우
+				try {
+					rs.beforeFirst();
+					for (int i = 0; i < ATOI(input); i++) {
+						rs.next();
+					}
+
+					String code = rs.getString(1);
+					menu.enter("상품 상세정보");
+					showItemInfo(code);
+					showItemList(rs);
+				} catch (SQLException e) {
+					System.out.println("검색 중 문제가 발생했습니다. 나중에 다시 시도해 주세요");
+					menu.leave();
+					return;
+				}				
+			} else { // 선택이 불가능한 경우
+				System.out.println("잘못된 입력입니다. 다시 입력해 주세요.");
+				System.out.printf("\t사유: \n" + fail_reason);
+			}
+		}
+	
 		menu.leave();
 	}
 
