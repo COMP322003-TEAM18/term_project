@@ -40,7 +40,7 @@ public class Main {
 				break;
 		}
 
-		return (Integer.parseInt(tTmp));
+		return (ATOI(tTmp));
 	}
 
 	public static void rootScreen() {
@@ -415,7 +415,7 @@ public class Main {
 				rs.beforeFirst(); // 커서를 맨 앞으로 옮김
 				if (rs.next()) {
 					String SELECT_c_id = rs.getString(1);
-					c_id = String.format("C3%08d", Integer.parseInt(SELECT_c_id.substring(2)) + 1);
+					c_id = String.format("C3%08d", ATOI(SELECT_c_id.substring(2)) + 1);
 				}
 				rs.close();
 				conn.commit();
@@ -988,7 +988,8 @@ public class Main {
 				menu.enter("매출 확인");
 				searchSale();
 			} else if (input.equals("4")) {
-
+				menu.enter("배송 업체 별 배송 횟수 조회");
+				orderCount();
 			} else if (input.equals("0")) {
 				currentUser = null; // 로그아웃 시
 				System.out.println("성공적으로 로그아웃하였습니다.");
@@ -1013,6 +1014,33 @@ public class Main {
 		}
 
 		menu.leave();
+	}
+
+	private static void orderCount() {
+		try {
+			sql = "SELECT SH.Sh_id, SH.Name, COUNT(*) FROM SHIPPINGORDER SO, SHIPPINGCOMPANY SH WHERE SO.Sh_id = SH.Sh_id GROUP BY SO.Sh_id";
+			ResultSet rs = stmt.executeQuery(sql);
+
+			System.out.println();
+			System.out.println(menu.path());
+			System.out.println(hr);
+			System.out.format("%s\t%s\t%s\n", "연번", "배송업체명", "총 배송 횟수");
+
+			int cnt = 1;
+			while (rs.next()) {
+				String name = rs.getString(2);
+				int orderCnt = rs.getInt(3);
+
+				System.out.format("%d\t%s\t%d\n", cnt++, name, orderCnt);
+			}
+
+			rs.close();
+			conn.commit();
+			menu.leave();
+		} catch (SQLException ex) {
+			System.err.println("sql error = " + ex.getMessage());
+			System.exit(1);
+		}
 	}
 
 	private static void searchSale() {
@@ -1091,7 +1119,7 @@ public class Main {
 			sql = "SELECT ol2.Date, SUM(i.Price*ol2.Quantity) AS TotalCost FROM ITEM i\n"
 					+ "INNER JOIN (SELECT so2.Date, ol.So_id, ol.I_code, ol.Quantity FROM ORDER_LIST ol \n"
 					+ "INNER JOIN (SELECT DATE_FORMAT(so.Otime, \"%Y-%m\") AS Date, so.So_id FROM SHIPPINGORDER so WHERE so.Otime BETWEEN date(\""
-					+ input_date + "-01-01\") and date(\"" + String.format("%d", Integer.parseInt(input_date) + 1)
+					+ input_date + "-01-01\") and date(\"" + String.format("%d", ATOI(input_date) + 1)
 					+ "-01-01\")) AS so2\n" + "ON ol.So_id=so2.So_id) AS ol2\n" + "ON i.Code=ol2.I_code\n"
 					+ "GROUP BY ol2.Date;";
 		} else if (input.equals("YYYY-MM")) {
@@ -1130,11 +1158,11 @@ public class Main {
 				while (rs.next()) {
 					if (input.equals("총 매출")) {
 						totalSale = rs.getString(1);
-						System.out.println("현재까지 총 매출 : " + String.format("%,d", Integer.parseInt(totalSale)));
+						System.out.println("현재까지 총 매출 : " + String.format("%,d", ATOI(totalSale)));
 					} else {
 						String qDate = rs.getString(1);
 						totalSale = rs.getString(2);
-						System.out.printf("%s | %s\n", qDate, String.format("%,d", Integer.parseInt(totalSale)));
+						System.out.printf("%s | %s\n", qDate, String.format("%,d", ATOI(totalSale)));
 					}
 				}
 				rs.close();
@@ -1828,7 +1856,7 @@ public class Main {
 					fail_reason += "\t번호를 입력해 주세요.\n";
 				} else { // 정규식이 일치하는 경우
 					// 나열된 번호 내에서 입력하지 않은 경우
-					if (Integer.parseInt(input) > current_id_list.size() || Integer.parseInt(input) < 0) {
+					if (ATOI(input) > current_id_list.size() || ATOI(input) < 0) {
 						input_check = false;
 						fail_reason += "\t나열된 항목 내에서 번호를 선택해 주세요.\n";
 					}
@@ -1853,9 +1881,9 @@ public class Main {
 					return;
 				}
 			} else {
-				System.out.println(current_name_list.get(Integer.parseInt(input) - 1) + "를(을) 선택했습니다.");
-				selected_category_id.add(current_id_list.get(Integer.parseInt(input) - 1));
-				selected_category_name.add(current_name_list.get(Integer.parseInt(input) - 1));
+				System.out.println(current_name_list.get(ATOI(input) - 1) + "를(을) 선택했습니다.");
+				selected_category_id.add(current_id_list.get(ATOI(input) - 1));
+				selected_category_name.add(current_name_list.get(ATOI(input) - 1));
 			}
 		}
 
